@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: finsight
+      POSTGRES_PASSWORD: finsight
+      POSTGRES_DB: finsight
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finsight"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./apps/api
+    environment:
+      DATABASE_URL: postgresql://finsight:finsight@db:5432/finsight
+      JWT_SECRET: ${JWT_SECRET:-local-dev-secret}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-haiku-5-5}
+      SEED_DEMO: "true"
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./apps/web
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

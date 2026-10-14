@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  transactions Transaction[]
+  importJobs   ImportJob[]
+}
+
+/// Money is stored as integer cents to avoid floating-point rounding errors.
+model Transaction {
+  id          String          @id @default(cuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        DateTime        @db.Date
+  amountCents Int
+  type        TransactionType
+  category    String
+  description String?
+  createdAt   DateTime        @default(now())
+
+  // Covers the main access paths: list by period and aggregate by type/category.
+  @@index([userId, date])
+  @@index([userId, type, category])
+}
+
+/// CSV imports are processed asynchronously by a background worker (DB-backed queue).
+model ImportJob {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       ImportStatus @default(PENDING)
+  payload      String
+  totalRows    Int          @default(0)
+  importedRows Int          @default(0)
+  errors       Json?
+  createdAt    DateTime     @default(now())
+  startedAt    DateTime?
+  finishedAt   DateTime?
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}

@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  api:
+    name: API · typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    env:
+      DATABASE_URL: postgresql://finsight:finsight@localhost:5432/finsight
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npx prisma validate
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run build
+
+  web:
+    name: Web · typecheck & build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run build
+
+  e2e:
+    name: E2E · Playwright on Docker Compose
+    needs: [api, web]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Start stack
+        run: docker compose up -d --build
+      - name: Wait for API
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:4000/health && exit 0
+            sleep 2
+          done
+          docker compose logs api
+          exit 1
+      - name: Install Playwright
+        working-directory: apps/web
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+      - name: Run E2E tests
+        working-directory: apps/web
+        run: npm run e2e
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/test-results
