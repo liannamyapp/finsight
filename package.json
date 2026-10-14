@@ -1,0 +1,23 @@
+{
+  "name": "finsight",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "FinSight on Netlify: React SPA (apps/web) + serverless API (netlify/functions) on Netlify Database",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
+    "@netlify/database": "^2.0.1",
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "^1.0.0-beta.22",
+    "jsonwebtoken": "^9.0.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^6.0.2",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^26.6.5",
+    "drizzle-kit": "^1.0.0-beta.22",
+    "typescript": "^7.0.2"
+  }
+}
