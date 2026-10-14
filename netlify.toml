@@ -1,0 +1,12 @@
+[build]
+  command = "npm --prefix apps/web install && npm --prefix apps/web run build"
+  publish = "apps/web/dist"
+
+[functions]
+  node_bundler = "esbuild"
+
+# SPA fallback for client-side routes (API routes are served by netlify/functions/api.mts).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
